@@ -1,0 +1,57 @@
+openapi: 3.0.3
+info:
+  title: Sample Pet API
+  version: 1.0.0
+  description: Minimal API for Agent Tools tests.
+servers:
+  - url: https://petstore.example.com/v1
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      summary: List pets
+      description: Returns a paginated list of pets.
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum pets to return
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad request
+    post:
+      operationId: createPet
+      summary: Create a pet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                tag:
+                  type: string
+      responses:
+        "201":
+          description: Created
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      summary: Get pet by ID
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: Not found
