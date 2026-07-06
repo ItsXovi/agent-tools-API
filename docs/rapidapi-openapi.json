@@ -1,0 +1,358 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "PDF Toolkit API",
+    "description": "Merge, split, compress, and watermark PDF files via REST. Metered API keys with monthly conversion limits.",
+    "version": "0.2.0",
+    "x-category": "Tools",
+    "x-long-description": "PDF Toolkit API is a production-ready REST service for common PDF operations.\n\n**Endpoints**\n- **Merge** — combine two or more PDFs into a single document\n- **Split** — extract page ranges (returns PDF or ZIP)\n- **Compress** — reduce PDF file size\n- **Watermark** — add text watermarks (center, top, bottom, diagonal)\n- **Usage** — check monthly conversion usage for your API key\n\n**Authentication**\nSend your API key in the `X-API-Key` header on every request.\n\n**Metering**\nEach PDF operation counts as one conversion. Responses include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers. Limits reset on the 1st of each month (UTC).\n\n**Upload limits**\nMaximum file size per upload: 10 MB."
+  },
+  "servers": [
+    {
+      "url": "https://agent-tools-api-production.up.railway.app",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    { "name": "PDF", "description": "PDF conversion operations (each counts as 1 conversion)" },
+    { "name": "Usage", "description": "API key usage and limits" }
+  ],
+  "security": [
+    { "ApiKeyAuth": [] }
+  ],
+  "paths": {
+    "/v1/pdf/merge": {
+      "post": {
+        "tags": ["PDF"],
+        "summary": "Merge PDFs",
+        "description": "Merge two or more PDF files into a single PDF. Returns `application/pdf`.",
+        "operationId": "mergePdfs",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["files"],
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": { "type": "string", "format": "binary" },
+                    "minItems": 2,
+                    "description": "Two or more PDF files (repeat the `files` field for each file)"
+                  }
+                }
+              },
+              "encoding": {
+                "files": {
+                  "contentType": "application/pdf",
+                  "style": "form",
+                  "explode": true
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Merged PDF",
+            "headers": {
+              "X-RateLimit-Limit": { "schema": { "type": "integer" }, "description": "Monthly conversion limit" },
+              "X-RateLimit-Remaining": { "schema": { "type": "integer" }, "description": "Conversions remaining this month" },
+              "X-RateLimit-Reset": { "schema": { "type": "integer" }, "description": "Unix timestamp when the limit resets" }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "413": { "$ref": "#/components/responses/PayloadTooLarge" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/v1/pdf/split": {
+      "post": {
+        "tags": ["PDF"],
+        "summary": "Split PDF",
+        "description": "Split a PDF by page ranges. A single range returns one PDF; multiple ranges or `all` returns a ZIP of PDFs.",
+        "operationId": "splitPdf",
+        "parameters": [
+          {
+            "name": "pages",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Page ranges (1-indexed), e.g. `1-3,5` or `all` for one PDF per page",
+            "example": "1-3,5"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PDF file to split"
+                  }
+                }
+              },
+              "encoding": {
+                "file": { "contentType": "application/pdf" }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Split result — single PDF or ZIP of PDFs",
+            "headers": {
+              "X-RateLimit-Limit": { "schema": { "type": "integer" } },
+              "X-RateLimit-Remaining": { "schema": { "type": "integer" } },
+              "X-RateLimit-Reset": { "schema": { "type": "integer" } }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              },
+              "application/zip": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "413": { "$ref": "#/components/responses/PayloadTooLarge" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/v1/pdf/compress": {
+      "post": {
+        "tags": ["PDF"],
+        "summary": "Compress PDF",
+        "description": "Reduce the file size of a PDF. Returns `application/pdf`.",
+        "operationId": "compressPdf",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PDF file to compress"
+                  }
+                }
+              },
+              "encoding": {
+                "file": { "contentType": "application/pdf" }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Compressed PDF",
+            "headers": {
+              "X-RateLimit-Limit": { "schema": { "type": "integer" } },
+              "X-RateLimit-Remaining": { "schema": { "type": "integer" } },
+              "X-RateLimit-Reset": { "schema": { "type": "integer" } }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "413": { "$ref": "#/components/responses/PayloadTooLarge" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/v1/pdf/watermark": {
+      "post": {
+        "tags": ["PDF"],
+        "summary": "Watermark PDF",
+        "description": "Add a text watermark to every page of a PDF.",
+        "operationId": "watermarkPdf",
+        "parameters": [
+          {
+            "name": "text",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Watermark text",
+            "example": "CONFIDENTIAL"
+          },
+          {
+            "name": "position",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["center", "top", "bottom", "diagonal"],
+              "default": "center"
+            },
+            "description": "Watermark position"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PDF file to watermark"
+                  }
+                }
+              },
+              "encoding": {
+                "file": { "contentType": "application/pdf" }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Watermarked PDF",
+            "headers": {
+              "X-RateLimit-Limit": { "schema": { "type": "integer" } },
+              "X-RateLimit-Remaining": { "schema": { "type": "integer" } },
+              "X-RateLimit-Reset": { "schema": { "type": "integer" } }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "413": { "$ref": "#/components/responses/PayloadTooLarge" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/v1/usage": {
+      "get": {
+        "tags": ["Usage"],
+        "summary": "Get usage",
+        "description": "Return monthly conversion usage and limits for the authenticated API key.",
+        "operationId": "getUsage",
+        "responses": {
+          "200": {
+            "description": "Monthly usage stats",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UsageResponse" },
+                "example": {
+                  "conversions_used": 12,
+                  "limit": 50,
+                  "reset_at": "2026-08-01T00:00:00+00:00",
+                  "tier": "free",
+                  "label": "my app"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key issued for your subscription (e.g. atk_...)"
+      }
+    },
+    "schemas": {
+      "ErrorDetail": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "array",
+                "items": { "type": "object" }
+              }
+            ]
+          }
+        }
+      },
+      "UsageResponse": {
+        "type": "object",
+        "required": ["conversions_used", "limit", "reset_at", "tier"],
+        "properties": {
+          "conversions_used": { "type": "integer", "description": "Conversions used this month" },
+          "limit": { "type": "integer", "description": "Monthly conversion limit" },
+          "reset_at": { "type": "string", "format": "date-time", "description": "When the monthly counter resets" },
+          "tier": { "type": "string", "description": "Key tier: free, indie, or team" },
+          "label": { "type": "string", "nullable": true, "description": "Optional key label" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid input (bad PDF, missing fields, invalid page range)",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorDetail" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing or invalid API key",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorDetail" }
+          }
+        }
+      },
+      "PayloadTooLarge": {
+        "description": "Uploaded file exceeds the 10 MB limit",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorDetail" }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Monthly conversion limit exceeded",
+        "headers": {
+          "X-RateLimit-Limit": { "schema": { "type": "integer" } },
+          "X-RateLimit-Remaining": { "schema": { "type": "integer" } },
+          "X-RateLimit-Reset": { "schema": { "type": "integer" } }
+        },
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorDetail" }
+          }
+        }
+      }
+    }
+  }
+}
