@@ -118,8 +118,8 @@ def compress_pdf(data: bytes) -> bytes:
     reader = _read_pdf(data)
     writer = PdfWriter()
     for page in reader.pages:
-        page.compress_content_streams()
         writer.add_page(page)
+        writer.pages[-1].compress_content_streams()
     if reader.metadata:
         writer.add_metadata(reader.metadata)
 
