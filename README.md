@@ -169,7 +169,7 @@ Deploy from the [Railway dashboard](https://railway.app) (GitHub) or the Railway
    cd C:\Users\gdick\agent-tools-api
    git add .
    git commit -m "Initial PDF Toolkit API"
-   git remote add origin https://github.com/YOUR_USER/agent-tools-api.git
+   git remote add origin https://github.com/ItsXovi/agent-tools-api.git
    git push -u origin main
    ```
 2. In Railway: **New Project** → **Deploy from GitHub repo**
@@ -196,17 +196,19 @@ In Railway: open your **service** → **Variables** → **Raw Editor** and paste
 
 ```
 REQUIRE_API_KEY=true
-ADMIN_SECRET=gnsA0knjn6aWokfmGILrgL1Z0JUk-SObyAidkNiW_R7eQ5_ZzCH11jO63veoMKkI
+ADMIN_SECRET=change-me-to-a-long-random-string
 DATABASE_PATH=/app/data/agent_tools.db
+MAX_PDF_BYTES=10485760
 ```
 
 | Variable | Value | Notes |
 |----------|-------|-------|
 | `REQUIRE_API_KEY` | `true` | Require `X-API-Key` on PDF endpoints |
-| `ADMIN_SECRET` | *(generate your own)* | Protects `POST /v1/keys`; use the value above or run `python -c "import secrets; print(secrets.token_urlsafe(48))"` |
+| `ADMIN_SECRET` | *(generate your own)* | Protects `POST /v1/keys`; run `python -c "import secrets; print(secrets.token_urlsafe(48))"` |
 | `DATABASE_PATH` | `/app/data/agent_tools.db` | SQLite file inside the persistent volume |
+| `MAX_PDF_BYTES` | `10485760` | Max upload size per file (10 MB) |
 
-Optional: `MAX_PDF_BYTES=10485760` (10 MB default), `DEBUG=false`.
+Optional: `DEBUG=false`. See `.env.example` for local defaults.
 
 **Do not set `PORT`** — Railway injects it automatically; the Dockerfile binds to `${PORT:-8000}`.
 
@@ -235,7 +237,7 @@ The app creates `/app/data/agent_tools.db` on first start (`DATABASE_PATH` must 
 ```powershell
 curl -X POST https://YOUR_RAILWAY_DOMAIN/v1/keys `
   -H "Content-Type: application/json" `
-  -H "X-Admin-Secret: gnsA0knjn6aWokfmGILrgL1Z0JUk-SObyAidkNiW_R7eQ5_ZzCH11jO63veoMKkI" `
+  -H "X-Admin-Secret: your-admin-secret" `
   -d '{\"label\":\"my app\",\"tier\":\"free\"}'
 ```
 
